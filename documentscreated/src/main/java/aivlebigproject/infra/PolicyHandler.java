@@ -55,7 +55,7 @@ public class PolicyHandler {
         );
         // Comments //
         //정책상에서 AI 호출한다 fastAPI  반환값
-
+        
         // Sample Logic //
 
     }
@@ -75,6 +75,7 @@ public class PolicyHandler {
         //정책상에서 AI 호출한다 fastAPI
 
         // Sample Logic //
+        
 
     }
 

@@ -39,6 +39,14 @@ spring:
           destination: aivlebigproject
 #>>> EDA / Topic Name
           contentType: application/json
+        event-out-funeral-request:  # FastAPI 쪽으로 요청
+          destination: funeral-request
+          contentType: application/json
+
+        event-in-document-response:  # FastAPI로부터 생성 결과 받을 곳
+          group: documentscreated
+          destination: funeral-response
+          contentType: application/json
 
 logging:
   level:
@@ -83,6 +91,14 @@ spring:
           contentType: application/json
         event-out:
           destination: aivlebigproject
+          contentType: application/json
+        event-out-funeral-request:  # FastAPI 쪽으로 요청
+          destination: funeral-request
+          contentType: application/json
+
+        event-in-document-response:  # FastAPI로부터 생성 결과 받을 곳
+          group: documentscreated
+          destination: funeral-response
           contentType: application/json
 
 api:
