@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 public class PolicyHandler {
 
     @Autowired
+    KafkaProcessor kafkaProcessor;
+
+    @Autowired
     FuneralInfoRepository funeralInfoRepository;
 
     @Autowired
@@ -57,6 +60,14 @@ public class PolicyHandler {
         //정책상에서 AI 호출한다 fastAPI  반환값
         
         // Sample Logic //
+        kafkaProcessor.outboundFuneralRequest().send(
+        MessageBuilder
+            .withPayload(funeralRegiste)
+            .setHeader("type", "FuneralRegiste")  // Consumer에서 이걸 기준으로 처리 가능
+            .build()
+        );
+
+        System.out.println("📨 Kafka로 funeral-request 메시지 전송 완료");
 
     }
 
