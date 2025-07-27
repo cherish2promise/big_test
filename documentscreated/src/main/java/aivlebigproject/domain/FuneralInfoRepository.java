@@ -1,5 +1,5 @@
 package aivlebigproject.domain;
-
+import java.util.Optional;
 import aivlebigproject.domain.*;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -10,4 +10,6 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
     path = "funeralInfos"
 )
 public interface FuneralInfoRepository
-    extends PagingAndSortingRepository<FuneralInfo, Long> {}
+    extends PagingAndSortingRepository<FuneralInfo, Long> {
+        Optional<FuneralInfo> findByCustomerId(Long customerId);
+    }

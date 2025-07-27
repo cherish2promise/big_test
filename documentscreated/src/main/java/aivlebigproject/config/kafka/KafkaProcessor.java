@@ -3,16 +3,18 @@ package aivlebigproject.config.kafka;
 import org.springframework.cloud.stream.annotation.Input;
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.SubscribableChannel;
 
 public interface KafkaProcessor {
-    String INPUT = "event-in";
-    String OUTPUT = "event-out";
-    String OUTPUT_FUNERAL_REQUEST = "event-out-funeral-request"; // 새 토픽
-    String INPUT_DOCUMENT_RESPONSE = "event-in-document-response"; // 응답용 토픽
+
+    String INPUT = "inboundTopic";
+    String OUTPUT = "outboundTopic";
+
+    String OUTPUT_FUNERAL_REQUEST = "outboundFuneralRequest"; // Bogu AI용 (현재 있음)
+    String OUTPUT_SAMANG_AI_REQUEST = "outboundSamangAiRequest"; // <-- Samang AI용 추가!
+    String OUTPUT_TIMETABLE_AI_REQUEST = "outboundTimetableAiRequest"; // <-- Timetable AI용 추가!
 
     @Input(INPUT)
-    SubscribableChannel inboundTopic();
+    MessageChannel inboundTopic();
 
     @Output(OUTPUT)
     MessageChannel outboundTopic();
@@ -20,6 +22,9 @@ public interface KafkaProcessor {
     @Output(OUTPUT_FUNERAL_REQUEST)
     MessageChannel outboundFuneralRequest();
 
-    @Input(INPUT_DOCUMENT_RESPONSE)
-    SubscribableChannel inboundDocumentResponse();
+    @Output(OUTPUT_SAMANG_AI_REQUEST) // <-- Samang AI용 Output 채널 정의
+    MessageChannel outboundSamangAiRequest();
+
+    @Output(OUTPUT_TIMETABLE_AI_REQUEST) // <-- Timetable AI용 Output 채널 정의
+    MessageChannel outboundTimetableAiRequest();
 }

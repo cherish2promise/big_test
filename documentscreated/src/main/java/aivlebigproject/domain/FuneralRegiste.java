@@ -47,5 +47,9 @@ public class FuneralRegiste extends AbstractEvent {
     public FuneralRegiste() {
         super();
     }
+
+    public String getType() {
+        return "FuneralRegiste"; // PolicyHandler의 condition과 정확히 일치해야 합니다.
+    }
 }
 //>>> DDD / Domain Event
