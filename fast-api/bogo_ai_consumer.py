@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # Spring Boot에서 보낸 요청을 수신할 토픽 (FuneralRegiste 이벤트)
-KAFKA_INPUT_TOPIC = "funeral-request" 
+KAFKA_INPUT_TOPIC = "aivlebigproject" 
 
 # AI 처리 완료 후 Spring Boot로 보낼 토픽 (KafkaProcessor.INPUT_FUNERAL_REQUEST_PROCESSED)
 KAFKA_OUTPUT_TOPIC = "funeral-request-processed"
