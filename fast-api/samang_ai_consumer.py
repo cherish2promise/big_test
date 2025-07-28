@@ -1,58 +1,68 @@
-import asyncio
-from aiokafka import AIOKafkaConsumer
+# samang_ai_consumer.py
+
+import logging
 import json
+import uuid
+import time
 
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
-SAMANG_AI_TOPIC = "samang-ai-request-topic" # application.yml에 설정된 토픽 이름과 일치
+from kafka_consumer_producer import start_consumer, send_message
 
-async def handle_samang_ai_request(data: dict):
-    """
-    Samang AI 서비스의 실제 처리 로직을 담당합니다.
-    FuneralRegiste 이벤트 데이터를 받아서 필요한 AI 작업을 수행합니다.
-    """
-    print("\n--- Samang AI: Received message from Kafka ---")
-    print(f"  Topic: {SAMANG_AI_TOPIC}")
-    print(f"  Payload: {json.dumps(data, indent=2, ensure_ascii=False)}")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-    # 여기에 실제 Samang AI 로직 삽입
-    # 예: 데이터 분석, 특정 정보 추출, DB 저장 등
-    funeral_id = data.get("id")
-    funeral_name = data.get("name")
-    funeral_rrn = data.get("rrn") # 주민등록번호 등
-    # ... FuneralRegiste 이벤트의 다른 필드들을 data 딕셔너리에서 추출하여 사용
+KAFKA_INPUT_TOPIC = "samang-ai-request" # Spring Boot의 outboundSamangAiRequest 에 해당
+KAFKA_OUTPUT_TOPIC = "samang-ai-processed" # KafkaProcessor.INPUT_SAMANG_AI_PROCESSED 에 해당
 
-    print(f"  Samang AI processing data for Funeral ID: {funeral_id}, Name: {funeral_name}...")
-    # 가정: Samang AI가 특정 문서를 생성하거나 정보를 분석했다고 가정
-    print("  Samang AI: 사망자 정보 분석 및 관련 문서 준비 완료 (가정)")
-    # AI 처리 결과를 다시 Kafka로 발행하여 Spring Boot에 알릴 수도 있습니다.
-    # (이 부분은 추후 필요시 구현)
+CONSUMER_GROUP_ID = "samang-ai-group"
+TEMPLATE_ID = 2 # 사망 신고서
 
-    print("---------------------------------------------------\n")
+def process_samang_request(message_data: dict):
+    """사망 신고서 생성 요청 메시지를 처리하는 함수."""
+    original_request_id = message_data.get("id")
+    if not original_request_id:
+        logger.error(f"Received message without 'id': {message_data}")
+        return
 
-async def consume_samang_ai():
-    """
-    Samang AI 서비스의 Kafka 컨슈머를 시작하고 메시지를 처리합니다.
-    """
-    consumer = AIOKafkaConsumer(
-        SAMANG_AI_TOPIC,
-        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        group_id="samang-ai-consumer-group", # 이 컨슈머 그룹의 고유 ID
-        value_deserializer=lambda x: json.loads(x.decode("utf-8"))
-    )
+    logger.info(f"Processing deceased report request for original ID: {original_request_id}")
 
-    print(f"Starting Samang AI Kafka consumer on topic: {SAMANG_AI_TOPIC}")
-    await consumer.start()
+    generated_file_url = None
     try:
-        async for msg in consumer:
-            await handle_samang_ai_request(msg.value)
-    except asyncio.CancelledError:
-        print(f"Samang AI Kafka consumer for {SAMANG_AI_TOPIC} cancelled.")
-    except Exception as e:
-        print(f"Samang AI Kafka consumer error: {e}")
-    finally:
-        await consumer.stop()
-        print(f"Samang AI Kafka consumer for {SAMANG_AI_TOPIC} stopped.")
+        # ----------------------------------------------------------------------
+        # ✨ 여기부터 실제 AI 모델 처리 및 파일 저장 로직 ✨
+        # ----------------------------------------------------------------------
+        time.sleep(2) # 시뮬레이션
+        filename = f"deceased_report_{original_request_id}_{uuid.uuid4()}.pdf"
+        generated_file_url = f"http://your-file-server.com/documents/{filename}" 
+        logger.info(f"Deceased report for request ID {original_request_id} generated. File URL: {generated_file_url}")
+        # ----------------------------------------------------------------------
+        # ✨ 실제 AI 로직 끝 ✨
+        # ----------------------------------------------------------------------
 
-# 이 파일이 직접 실행될 때 (테스트용)
+        output_payload = {
+            "id": original_request_id,
+            "template_id": TEMPLATE_ID,
+            "file_url": generated_file_url,
+            "message": "사망 신고서 생성이 성공적으로 완료되었습니다."
+        }
+        send_message(KAFKA_OUTPUT_TOPIC, str(original_request_id), output_payload)
+        logger.info(f"Sent completion message for deceased report (ID: {original_request_id}) to Spring Boot.")
+
+    except Exception as e:
+        logger.error(f"Error during deceased report generation for ID {original_request_id}: {e}", exc_info=True)
+        error_output_payload = {
+            "id": original_request_id,
+            "template_id": TEMPLATE_ID,
+            "file_url": None,
+            "error": str(e),
+            "message": "사망 신고서 생성에 실패했습니다."
+        }
+        send_message(KAFKA_OUTPUT_TOPIC, str(original_request_id), error_output_payload)
+        logger.error(f"Sent error message for deceased report (ID: {original_request_id}) to Spring Boot.")
+
+def start_samang_consumer():
+    """사망 신고서 AI Consumer를 시작하는 헬퍼 함수."""
+    start_consumer(KAFKA_INPUT_TOPIC, CONSUMER_GROUP_ID, process_samang_request)
+
 if __name__ == "__main__":
-    asyncio.run(consume_samang_ai())
+    logger.info("Starting Samang AI Consumer directly...")
+    start_samang_consumer()

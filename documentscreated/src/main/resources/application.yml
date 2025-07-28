@@ -30,28 +30,33 @@ spring:
       bindings:
         event-in:
           group: documentscreated
-#<<< EDA / Topic Name
           destination: aivlebigproject
-#>>> EDA / Topic Name
           contentType: application/json
         event-out:
-#<<< EDA / Topic Name
           destination: aivlebigproject
-#>>> EDA / Topic Name
           contentType: application/json
-        event-out-funeral-request:  # FastAPI 쪽으로 요청
-          destination: funeral-request
-          contentType: application/json
-
-        event-in-document-response:  # FastAPI로부터 생성 결과 받을 곳
-          group: documentscreated
-          destination: funeral-response
-          contentType: application/json
-        outboundSamangAiRequest: # <-- Samang AI용 바인딩 추가
-          destination: samang-ai-request-topic # Samang AI가 구독할 토픽 이름 (새로 정의)
-        outboundTimetableAiRequest: # <-- Timetable AI용 바인딩 추가
-          destination: timetable-ai-request-topic # Timetable AI가 구독할 토픽 이름 (새로 정의)
-
+        outboundFuneralRequest: # KafkaProcessor.OUTPUT_FUNERAL_REQUEST
+          destination: funeral-request-topic # 예: Bogu AI로 보내는 토픽 이름
+        outboundSamangAiRequest: # KafkaProcessor.OUTPUT_SAMANG_AI_REQUEST
+          destination: samang-ai-request-topic # 예: Samang AI로 요청 보내는 토픽 이름
+        outboundTimetableAiRequest: # KafkaProcessor.OUTPUT_TIMETABLE_AI_REQUEST
+          destination: timetable-ai-request-topic # 예: Timetable AI로 요청 보내는 토픽 이름
+                # --- AI 처리 결과 인바운드 채널 ---
+        inboundFuneralRequestProcessed: # KafkaProcessor.INPUT_FUNERAL_REQUEST_PROCESSED
+          destination: funeral-request-processed # FastAPI에서 장례 요청 처리 후 발행하는 토픽 이름
+          group: fastapi-processed-consumer-group # 이 토픽을 구독할 컨슈머 그룹 ID
+          consumer:
+            auto-offset-reset: earliest
+        inboundSamangAiProcessed: # KafkaProcessor.INPUT_SAMANG_AI_PROCESSED
+          destination: samang-ai-processed-topic # 예: Samang AI가 처리 후 결과를 보내는 토픽 이름
+          group: samang-ai-processed-consumer-group
+          consumer:
+            auto-offset-reset: earliest
+        inboundTimetableAiProcessed: # KafkaProcessor.INPUT_TIMETABLE_AI_PROCESSED
+          destination: timetable-ai-processed-topic # 예: Timetable AI가 처리 후 결과를 보내는 토픽 이름
+          group: timetable-ai-processed-consumer-group
+          consumer:
+            auto-offset-reset: earliest
 logging:
   level:
     org.hibernate.type: trace
@@ -96,14 +101,28 @@ spring:
         event-out:
           destination: aivlebigproject
           contentType: application/json
-        event-out-funeral-request:  # FastAPI 쪽으로 요청
-          destination: funeral-request
-          contentType: application/json
-
-        event-in-document-response:  # FastAPI로부터 생성 결과 받을 곳
-          group: documentscreated
-          destination: funeral-response
-          contentType: application/json
+        outboundFuneralRequest: # KafkaProcessor.OUTPUT_FUNERAL_REQUEST
+          destination: funeral-request-topic # 예: Bogu AI로 보내는 토픽 이름
+        outboundSamangAiRequest: # KafkaProcessor.OUTPUT_SAMANG_AI_REQUEST
+          destination: samang-ai-request-topic # 예: Samang AI로 요청 보내는 토픽 이름
+        outboundTimetableAiRequest: # KafkaProcessor.OUTPUT_TIMETABLE_AI_REQUEST
+          destination: timetable-ai-request-topic # 예: Timetable AI로 요청 보내는 토픽 이름
+                # --- AI 처리 결과 인바운드 채널 ---
+        inboundFuneralRequestProcessed: # KafkaProcessor.INPUT_FUNERAL_REQUEST_PROCESSED
+          destination: funeral-request-processed # FastAPI에서 장례 요청 처리 후 발행하는 토픽 이름
+          group: fastapi-processed-consumer-group # 이 토픽을 구독할 컨슈머 그룹 ID
+          consumer:
+            auto-offset-reset: earliest
+        inboundSamangAiProcessed: # KafkaProcessor.INPUT_SAMANG_AI_PROCESSED
+          destination: samang-ai-processed-topic # 예: Samang AI가 처리 후 결과를 보내는 토픽 이름
+          group: samang-ai-processed-consumer-group
+          consumer:
+            auto-offset-reset: earliest
+        inboundTimetableAiProcessed: # KafkaProcessor.INPUT_TIMETABLE_AI_PROCESSED
+          destination: timetable-ai-processed-topic # 예: Timetable AI가 처리 후 결과를 보내는 토픽 이름
+          group: timetable-ai-processed-consumer-group
+          consumer:
+            auto-offset-reset: earliest
 
 api:
   url: 

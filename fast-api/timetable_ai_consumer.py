@@ -1,57 +1,66 @@
-import asyncio
-from aiokafka import AIOKafkaConsumer
+import logging
 import json
+import uuid
+import time
 
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
-TIMETABLE_AI_TOPIC = "timetable-ai-request-topic" # application.yml에 설정된 토픽 이름과 일치
+from kafka_consumer_producer import start_consumer, send_message
 
-async def handle_timetable_ai_request(data: dict):
-    """
-    Timetable AI 서비스의 실제 처리 로직을 담당합니다.
-    FuneralRegiste 이벤트 데이터를 받아서 필요한 AI 작업을 수행합니다.
-    """
-    print("\n--- Timetable AI: Received message from Kafka ---")
-    print(f"  Topic: {TIMETABLE_AI_TOPIC}")
-    print(f"  Payload: {json.dumps(data, indent=2, ensure_ascii=False)}")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-    # 여기에 실제 Timetable AI 로직 삽입
-    # 예: 장례식 날짜/시간, 사용자 요구사항 등을 바탕으로 일정 생성
-    funeral_id = data.get("id")
-    procession_datetime = data.get("processionDateTime") # 발인 일시 등
-    # ... FuneralRegiste 이벤트의 다른 필드들을 data 딕셔너리에서 추출하여 사용
+KAFKA_INPUT_TOPIC = "timetable-ai-request" # Spring Boot의 outboundTimetableAiRequest 에 해당
+KAFKA_OUTPUT_TOPIC = "timetable-ai-processed" # KafkaProcessor.INPUT_TIMETABLE_AI_PROCESSED 에 해당
 
-    print(f"  Timetable AI processing data for Funeral ID: {funeral_id}, Procession Time: {procession_datetime}...")
-    # 가정: Timetable AI가 장례 일정표를 생성했다고 가정
-    print("  Timetable AI: 장례 일정표 생성 완료 (가정)")
-    # AI 처리 결과를 다시 Kafka로 발행하여 Spring Boot에 알릴 수도 있습니다.
-    # (이 부분은 추후 필요시 구현)
+CONSUMER_GROUP_ID = "timetable-ai-group"
+TEMPLATE_ID = 3 # 장례 일정표
 
-    print("---------------------------------------------------\n")
+def process_timetable_request(message_data: dict):
+    """장례 일정표 생성 요청 메시지를 처리하는 함수."""
+    original_request_id = message_data.get("id")
+    if not original_request_id:
+        logger.error(f"Received message without 'id': {message_data}")
+        return
 
-async def consume_timetable_ai():
-    """
-    Timetable AI 서비스의 Kafka 컨슈머를 시작하고 메시지를 처리합니다.
-    """
-    consumer = AIOKafkaConsumer(
-        TIMETABLE_AI_TOPIC,
-        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        group_id="timetable-ai-consumer-group", # 이 컨슈머 그룹의 고유 ID
-        value_deserializer=lambda x: json.loads(x.decode("utf-8"))
-    )
+    logger.info(f"Processing timetable request for original ID: {original_request_id}")
 
-    print(f"Starting Timetable AI Kafka consumer on topic: {TIMETABLE_AI_TOPIC}")
-    await consumer.start()
+    generated_file_url = None
     try:
-        async for msg in consumer:
-            await handle_timetable_ai_request(msg.value)
-    except asyncio.CancelledError:
-        print(f"Timetable AI Kafka consumer for {TIMETABLE_AI_TOPIC} cancelled.")
-    except Exception as e:
-        print(f"Timetable AI Kafka consumer error: {e}")
-    finally:
-        await consumer.stop()
-        print(f"Timetable AI Kafka consumer for {TIMETABLE_AI_TOPIC} stopped.")
+        # ----------------------------------------------------------------------
+        # ✨ 여기부터 실제 AI 모델 처리 및 파일 저장 로직 ✨
+        # ----------------------------------------------------------------------
+        time.sleep(5) # 시뮬레이션
+        filename = f"timetable_{original_request_id}_{uuid.uuid4()}.pdf"
+        generated_file_url = f"http://your-file-server.com/documents/{filename}" 
+        logger.info(f"Timetable for request ID {original_request_id} generated. File URL: {generated_file_url}")
+        # ----------------------------------------------------------------------
+        # ✨ 실제 AI 로직 끝 ✨
+        # ----------------------------------------------------------------------
 
-# 이 파일이 직접 실행될 때 (테스트용)
+        output_payload = {
+            "id": original_request_id,
+            "template_id": TEMPLATE_ID,
+            "file_url": generated_file_url,
+            "message": "장례 일정표 생성이 성공적으로 완료되었습니다."
+        }
+        send_message(KAFKA_OUTPUT_TOPIC, str(original_request_id), output_payload)
+        logger.info(f"Sent completion message for timetable (ID: {original_request_id}) to Spring Boot.")
+
+    except Exception as e:
+        logger.error(f"Error during timetable generation for ID {original_request_id}: {e}", exc_info=True)
+        error_output_payload = {
+            "id": original_request_id,
+            "template_id": TEMPLATE_ID,
+            "file_url": None,
+            "error": str(e),
+            "message": "장례 일정표 생성에 실패했습니다."
+        }
+        send_message(KAFKA_OUTPUT_TOPIC, str(original_request_id), error_output_payload)
+        logger.error(f"Sent error message for timetable (ID: {original_request_id}) to Spring Boot.")
+
+def start_timetable_consumer():
+    """장례 일정표 AI Consumer를 시작하는 헬퍼 함수."""
+    start_consumer(KAFKA_INPUT_TOPIC, CONSUMER_GROUP_ID, process_timetable_request)
+
 if __name__ == "__main__":
-    asyncio.run(consume_timetable_ai())
+    logger.info("Starting Timetable AI Consumer directly...")
+    start_timetable_consumer()
